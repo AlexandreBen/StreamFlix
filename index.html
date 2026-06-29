@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamFlix - Tradutor Automático</title>
+    <title>StreamFlix - Perfil e Catálogo TMDB</title>
     <style>
         /* Variáveis de Tema */
         :root {
@@ -14,6 +14,7 @@
             --accent-color: #e50914;
             --modal-bg: rgba(0, 0, 0, 0.85);
             --sidebar-bg: #1e1e1e;
+            --btn-secondary: #555555;
         }
 
         body.light-theme {
@@ -24,6 +25,7 @@
             --accent-color: #e50914;
             --modal-bg: rgba(255, 255, 255, 0.9);
             --sidebar-bg: #eaeaea;
+            --btn-secondary: #cccccc;
         }
 
         * {
@@ -38,13 +40,6 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             overflow-x: hidden;
-            /* Evita que o banner padrão do Google quebre o topo do site */
-            top: 0 !important; 
-        }
-
-        /* Oculta o banner superior feio do Google Tradutor */
-        .skiptranslate iframe {
-            display: none !important;
         }
 
         /* Navbar */
@@ -72,7 +67,7 @@
             display: flex;
             gap: 15px;
             align-items: center;
-            flex-wrap: wrap; /* Ajuda telas pequenas */
+            flex-wrap: wrap; 
         }
 
         input[type="text"] {
@@ -99,20 +94,51 @@
             transform: scale(1.05);
         }
 
-        .theme-btn {
-            background-color: #555;
+        .theme-btn { background-color: var(--btn-secondary); color: var(--text-color); }
+
+        /* Menu Dropdown do Utilizador Logado */
+        .user-profile {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            padding: 8px 15px;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            transition: transform 0.2s;
         }
 
-        /* Estilização básica do botão do Google */
-        #google_translate_element select {
-            padding: 7px 10px;
-            border-radius: 20px;
-            border: none;
-            background: var(--card-bg);
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 10px;
+            background-color: var(--card-bg);
+            min-width: 180px;
+            box-shadow: 0px 8px 25px rgba(0,0,0,0.7);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 2000;
+        }
+
+        .dropdown-content a {
             color: var(--text-color);
-            font-weight: bold;
-            outline: none;
-            cursor: pointer;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+
+        .dropdown-content a:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .user-profile:hover .dropdown-content {
+            display: block; 
         }
 
         /* Hero Section com Vídeo */
@@ -151,9 +177,7 @@
             z-index: -1;
         }
 
-        .hero-content {
-            z-index: 1; 
-        }
+        .hero-content { z-index: 1; }
 
         .hero h1 {
             font-size: 3.5rem;
@@ -168,7 +192,6 @@
             min-height: 100vh;
         }
 
-        /* Menu Lateral */
         .sidebar {
             width: 260px;
             background-color: var(--sidebar-bg);
@@ -206,7 +229,6 @@
             transform: translateX(5px);
         }
 
-        /* Conteúdo Principal */
         main {
             flex-grow: 1;
             padding: 30px 40px;
@@ -299,6 +321,11 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
+        .auth-content {
+            max-width: 400px;
+            text-align: center;
+        }
+
         .close-btn {
             position: absolute;
             top: 15px;
@@ -308,14 +335,14 @@
             color: var(--text-color);
         }
 
-        .login-form {
+        .auth-form {
             display: flex;
             flex-direction: column;
             gap: 15px;
             margin-top: 20px;
         }
 
-        .login-form input {
+        .auth-form input {
             padding: 12px;
             border-radius: 5px;
             border: 1px solid #555;
@@ -359,7 +386,8 @@
                 gap: 15px;
                 padding: 15px;
             }
-            .hero { margin-top: 130px; }
+            .hero { margin-top: 140px; }
+            .dropdown-content { right: -50px; } 
         }
 
         @media (max-width: 600px) {
@@ -377,61 +405,90 @@
     <header>
         <div class="logo" onclick="window.location.reload()">StreamFlix</div>
         <div class="nav-controls">
-            <div id="google_translate_element"></div>
             
-            <input type="text" id="search-input" placeholder="Buscar filmes ou séries...">
+            <input type="text" id="search-input" placeholder="Buscar filmes...">
             <button onclick="searchMovies()">Buscar</button>
             <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
-            <button onclick="openModal('loginModal')">Entrar</button>
+            
+            <button id="loginBtn" onclick="openAuthModal()">Entrar / Criar Conta</button>
+
+            <div id="userProfile" class="user-profile" style="display: none;">
+                <span id="userNameDisplay">Utilizador</span> <span>▼</span>
+                <div class="dropdown-content">
+                    <a href="#" onclick="openConfigModal()">⚙️ Configurações da Conta</a>
+                    <a href="#" onclick="logout()">🚪 Sair</a>
+                </div>
+            </div>
+
         </div>
     </header>
 
     <div class="hero">
-    <div class="hero-overlay"></div>
-    
-    <video autoplay loop muted playsinline class="hero-video">
-        <source src="Pippit_20260629_ActionTrailer.mp4" type="video/mp4">
-        Seu navegador não suporta vídeos de fundo.
-    </video>
-
-    <div class="hero-content">
-        <h1><span class="notranslate">Filmes, séries e muito mais.</span><br>Sem limites.</h1>
+        <div class="hero-overlay"></div>
+        <video autoplay loop muted playsinline class="hero-video">
+            <source src="Pippit_20260629_ActionTrailer.mp4" type="video/mp4">
+            O seu navegador não suporta vídeos de fundo.
+        </video>
+        <div class="hero-content">
+            <h1>Filmes, séries e muito mais.<br>Sem limites.</h1>
+        </div>
     </div>
-</div>
 
     <div class="layout-container">
         <aside class="sidebar">
-            <h3>Gêneros</h3>
+            <h3>Géneros</h3>
             <ul class="genre-list">
-                <li class="genre-item active" onclick="selectGenre('Action', this)">Ação</li>
-                <li class="genre-item" onclick="selectGenre('Comedy', this)">Comédia</li>
-                <li class="genre-item" onclick="selectGenre('Drama', this)">Drama</li>
-                <li class="genre-item" onclick="selectGenre('Horror', this)">Terror</li>
-                <li class="genre-item" onclick="selectGenre('Romance', this)">Romance</li>
-                <li class="genre-item" onclick="selectGenre('Sci-Fi', this)">Ficção Científica</li>
-                <li class="genre-item" onclick="selectGenre('Documentary', this)">Documentários</li>
+                <li class="genre-item active" onclick="selectGenre(28, this, 'Filmes de Ação')">Ação</li>
+                <li class="genre-item" onclick="selectGenre(35, this, 'Filmes de Comédia')">Comédia</li>
+                <li class="genre-item" onclick="selectGenre(18, this, 'Filmes de Drama')">Drama</li>
+                <li class="genre-item" onclick="selectGenre(27, this, 'Filmes de Terror')">Terror</li>
+                <li class="genre-item" onclick="selectGenre(10749, this, 'Filmes de Romance')">Romance</li>
+                <li class="genre-item" onclick="selectGenre(878, this, 'Ficção Científica')">Ficção Científica</li>
+                <li class="genre-item" onclick="selectGenre(99, this, 'Documentários')">Documentários</li>
             </ul>
         </aside>
 
         <main>
             <h2>
                 <span id="section-title">Filmes de Ação</span>
-                <span id="loading-indicator" class="loading-text">Carregando catálogo...</span>
+                <span id="loading-indicator" class="loading-text">A carregar catálogo...</span>
             </h2>
             <div class="movies-grid" id="movies-container">
                 </div>
         </main>
     </div>
 
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal('loginModal')">&times;</span>
-            <h2>Bem-vindo de volta</h2>
-            <form class="login-form" onsubmit="event.preventDefault(); alert('Login efetuado com sucesso!'); closeModal('loginModal');">
-                <input type="email" placeholder="E-mail" required>
-                <input type="password" placeholder="Senha" required>
-                <button type="submit">Entrar</button>
+    <div id="authModal" class="modal">
+        <div class="modal-content auth-content">
+            <span class="close-btn" onclick="closeModal('authModal')">&times;</span>
+            <h2 id="authTitle">Aceder à Conta</h2>
+            
+            <p id="authWarning" style="color: var(--accent-color); display: none; margin-top: 10px; font-weight: bold;">
+                Inicie sessão ou crie uma conta para ler as sinopses.
+            </p>
+
+            <form class="auth-form" onsubmit="handleAuth(event)">
+                <input type="text" id="authName" placeholder="Como quer ser chamado?" style="display: none;">
+                <input type="email" id="authEmail" placeholder="Correio eletrónico (E-mail)" required>
+                <input type="password" placeholder="Palavra-passe (Senha)" required>
+                <button type="submit" id="authSubmitBtn">Entrar</button>
             </form>
+            
+            <p style="margin-top: 20px; font-size: 14px;">
+                <span id="authToggleText">Ainda não tem conta?</span>
+                <a href="#" onclick="toggleAuthMode()" style="color: var(--accent-color); font-weight: bold; text-decoration: none;">Clique aqui</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal">
+        <div class="modal-content auth-content">
+            <span class="close-btn" onclick="closeModal('configModal')">&times;</span>
+            <h2>Configurações da Conta</h2>
+            <p style="margin-top: 15px; font-size: 14px; opacity: 0.8;">
+                Aqui poderá gerir a sua subscrição, alterar a palavra-passe e configurar perfis.
+                <br><br>(Em desenvolvimento)
+            </p>
         </div>
     </div>
 
@@ -444,37 +501,86 @@
                     <h2 id="modal-title">Título do Filme</h2>
                     <p style="color: var(--accent-color); font-weight: bold;">
                         Ano: <span id="modal-year" style="color: var(--text-color); margin-right: 15px;"></span>
-                        Nota IMDb: ⭐️ <span id="modal-rating" style="color: var(--text-color);"></span>
+                        Nota TMDB: ⭐️ <span id="modal-rating" style="color: var(--text-color);"></span>
                     </p>
-                    <p><strong>Gênero:</strong> <span id="modal-genre"></span></p>
+                    <p><strong>Géneros:</strong> <span id="modal-genre"></span></p>
                     <p id="modal-desc" style="line-height: 1.6; margin-top: 10px;"></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en', // O idioma base que vem da API é inglês
-                includedLanguages: 'pt', // Limitei para mostrar apenas Português para ficar mais limpo
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-            }, 'google_translate_element');
-        }
-    </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-
     <script>
-        // --- CONFIGURAÇÃO DA CHAVE OMDb ---
-        // Cole sua chave aqui novamente:
-        const API_KEY = 'fa44969c'; 
-        const BASE_URL = 'https://www.omdbapi.com/';
+        // --- CONFIGURAÇÃO DA CHAVE TMDB ---
+        // Volte a colar aqui a sua chave (API Key v3) do TMDB
+        const API_KEY = 'fa29411adcae73339f6a444fbcc458ff'; 
+        const BASE_URL = 'https://api.themoviedb.org/3';
+        const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 
+        // --- SISTEMA DE AUTENTICAÇÃO ---
+        let isLoggedIn = false;
+        let isLoginMode = true; 
+
+        function openAuthModal(showWarning = false) {
+            document.getElementById('authWarning').style.display = showWarning ? 'block' : 'none';
+            document.getElementById('authModal').style.display = 'flex';
+        }
+
+        function openConfigModal() {
+            document.getElementById('configModal').style.display = 'flex';
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? "Aceder à Conta" : "Criar Nova Conta";
+            document.getElementById('authSubmitBtn').innerText = isLoginMode ? "Entrar" : "Registar";
+            document.getElementById('authToggleText').innerText = isLoginMode ? "Ainda não tem conta?" : "Já possui conta?";
+            
+            document.getElementById('authName').style.display = isLoginMode ? "none" : "block";
+            document.getElementById('authName').required = !isLoginMode; 
+        }
+
+        function handleAuth(event) {
+            event.preventDefault(); 
+            isLoggedIn = true;
+            
+            let userFirstName = "";
+
+            if (!isLoginMode) {
+                const fullName = document.getElementById('authName').value;
+                userFirstName = fullName.split(" ")[0]; 
+            } else {
+                const email = document.getElementById('authEmail').value;
+                userFirstName = email.split("@")[0]; 
+                userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
+            }
+
+            document.getElementById('userNameDisplay').innerText = userFirstName;
+            closeModal('authModal');
+            
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('userProfile').style.display = 'inline-block';
+            
+            alert(isLoginMode ? `Bem-vindo de volta, ${userFirstName}!` : `Registo concluído com sucesso, ${userFirstName}!`);
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            
+            document.getElementById('loginBtn').style.display = 'inline-block';
+            document.getElementById('userProfile').style.display = 'none';
+            
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authName').value = '';
+
+            alert("Terminou a sua sessão em segurança.");
+        }
+
+        // --- FUNÇÕES DE ECRÃ E INTEGRAÇÃO TMDB ---
         const moviesContainer = document.getElementById('movies-container');
         const loadingIndicator = document.getElementById('loading-indicator');
 
         function toggleTheme() { document.body.classList.toggle('light-theme'); }
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
         window.onclick = function(event) {
@@ -483,9 +589,10 @@
             }
         }
 
-        async function fetchMoviesList(searchTerm, titleLabel) {
-            if (API_KEY === 'SUA_API_KEY_AQUI' || API_KEY.length < 5) {
-                moviesContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: red; font-weight: bold;">Por favor, insira sua chave OMDb API válida no código JavaScript.</p>';
+        // Busca pela API do TMDB (Carrega 2 páginas para ter até 40 filmes no ecrã)
+        async function fetchMoviesList(endpoint, titleLabel) {
+            if (API_KEY === 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmYTI5NDExYWRjYWU3MzMzOWY2YTQ0NGZiY2M0NThmZiIsIm5iZiI6MTc4MjQ4NDg1Mi45OSwic3ViIjoiNmEzZThmNzRmNGM3YjhiMGQ2OThmZmM1Iiwic2NvcGVzIjpbImFwaV9yZWFkIl0sInZlcnNpb24iOjF9.ZuXdmf46AsvtfiYep33tJoiGzeunAU8Yo00SdVVIOcE' || API_KEY.length < 10) {
+                moviesContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: red; font-weight: bold;">Por favor, insira a sua chave API do TMDB no JavaScript.</p>';
                 return;
             }
 
@@ -495,17 +602,18 @@
             let allMovies = [];
             
             try {
-                const pagesToFetch = [1, 2, 3];
+                // A carregar as páginas 1 e 2 simultaneamente (TMDB usa &page=1)
+                const pagesToFetch = [1, 2];
                 const fetchPromises = pagesToFetch.map(page => 
-                    fetch(`${BASE_URL}?apikey=${API_KEY}&s=${encodeURIComponent(searchTerm)}&page=${page}`)
+                    fetch(`${BASE_URL}${endpoint}&api_key=${API_KEY}&language=pt-PT&page=${page}`)
                     .then(res => res.json())
                 );
 
                 const results = await Promise.all(fetchPromises);
                 
                 results.forEach(data => {
-                    if (data.Response === "True") {
-                        allMovies = allMovies.concat(data.Search);
+                    if (data.results) {
+                        allMovies = allMovies.concat(data.results);
                     }
                 });
 
@@ -513,11 +621,12 @@
 
                 if (allMovies.length > 0) {
                     document.getElementById('section-title').innerText = titleLabel;
-                    const uniqueMovies = Array.from(new Set(allMovies.map(m => m.imdbID)))
-                        .map(id => allMovies.find(m => m.imdbID === id));
+                    // Limpar IDs duplicados caso a API repita algum
+                    const uniqueMovies = Array.from(new Set(allMovies.map(m => m.id)))
+                        .map(id => allMovies.find(m => m.id === id));
                     renderGrid(uniqueMovies);
                 } else {
-                    moviesContainer.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">Nenhum filme encontrado para "${searchTerm}".</p>`;
+                    moviesContainer.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">Nenhum título encontrado.</p>`;
                 }
             } catch (error) {
                 console.error("Erro na requisição:", error);
@@ -528,64 +637,80 @@
         function renderGrid(movies) {
             moviesContainer.innerHTML = '';
             movies.forEach(movie => {
-                if (movie.Poster === "N/A") return;
+                // Ignorar os resultados sem imagem de capa
+                if (!movie.poster_path) return;
 
                 const card = document.createElement('div');
                 card.classList.add('movie-card');
 
+                // A extrair apenas o ano da data de lançamento ("2023-05-10" -> "2023")
+                const releaseYear = movie.release_date ? movie.release_date.split('-')[0] : 'N/D';
+
                 card.innerHTML = `
-                    <img src="${movie.Poster}" alt="${movie.Title}">
+                    <img src="${IMG_URL + movie.poster_path}" alt="${movie.title}">
                     <div class="movie-info">
-                        <h3>${movie.Title}</h3>
-                        <p>Ano: ${movie.Year} (${movie.Type})</p>
+                        <h3>${movie.title}</h3>
+                        <p>Ano: ${releaseYear}</p>
                     </div>
                 `;
 
-                card.addEventListener('click', () => fetchMovieDetails(movie.imdbID));
+                card.addEventListener('click', () => {
+                    if (isLoggedIn) {
+                        fetchMovieDetails(movie.id);
+                    } else {
+                        openAuthModal(true); 
+                    }
+                });
+
                 moviesContainer.appendChild(card);
             });
         }
 
-        async function fetchMovieDetails(imdbID) {
+        async function fetchMovieDetails(movieId) {
             try {
-                const res = await fetch(`${BASE_URL}?apikey=${API_KEY}&i=${imdbID}&plot=full`);
+                // Puxar os detalhes aprofundados do filme pelo ID
+                const res = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${API_KEY}&language=pt-PT`);
                 const details = await res.json();
 
-                if (details.Response === "True") {
-                    document.getElementById('modal-title').innerText = details.Title;
-                    document.getElementById('modal-img').src = details.Poster !== "N/A" ? details.Poster : '';
-                    document.getElementById('modal-year').innerText = details.Year;
-                    document.getElementById('modal-rating').innerText = details.imdbRating !== "N/A" ? details.imdbRating : 'Sem nota';
-                    document.getElementById('modal-genre').innerText = details.Genre;
-                    document.getElementById('modal-desc').innerText = details.Plot !== "N/A" ? details.Plot : 'Sinopse não disponível.';
-                    openModal('movieModal');
+                if (details) {
+                    document.getElementById('modal-title').innerText = details.title;
+                    
+                    // Dar preferência à imagem de fundo larga, se não, usar o poster
+                    const modalImgPath = details.backdrop_path ? details.backdrop_path : details.poster_path;
+                    document.getElementById('modal-img').src = modalImgPath ? (IMG_URL + modalImgPath) : '';
+                    
+                    document.getElementById('modal-year').innerText = details.release_date ? details.release_date.split('-')[0] : 'N/D';
+                    document.getElementById('modal-rating').innerText = details.vote_average ? details.vote_average.toFixed(1) : 'Sem nota';
+                    
+                    // Juntar os géneros numa lista em texto
+                    const genresText = details.genres ? details.genres.map(g => g.name).join(', ') : 'N/D';
+                    document.getElementById('modal-genre').innerText = genresText;
+                    
+                    document.getElementById('modal-desc').innerText = details.overview ? details.overview : 'Sinopse completa não disponível em Português para este título.';
+                    
+                    document.getElementById('movieModal').style.display = 'flex';
                 }
             } catch (error) {
-                console.error("Erro ao puxar detalhes:", error);
+                console.error("Erro ao procurar detalhes:", error);
             }
         }
 
-        function selectGenre(genreKeyword, element) {
+        // Função ao clicar nos menus laterais (utiliza o ID do género do TMDB)
+        function selectGenre(genreId, element, label) {
             document.querySelectorAll('.genre-item').forEach(item => item.classList.remove('active'));
             element.classList.add('active');
             
-            const PT_LABELS = {
-                'Action': 'Filmes de Ação',
-                'Comedy': 'Filmes de Comédia',
-                'Drama': 'Filmes de Drama',
-                'Horror': 'Filmes de Terror/Horror',
-                'Romance': 'Filmes de Romance',
-                'Sci-Fi': 'Ficção Científica',
-                'Documentary': 'Documentários'
-            };
-            fetchMoviesList(genreKeyword, PT_LABELS[genreKeyword]);
+            // TMDB usa a funcionalidade "discover" para filtrar por género
+            fetchMoviesList(`/discover/movie?with_genres=${genreId}`, label);
         }
 
+        // Função da barra de pesquisa do topo
         function searchMovies() {
             const term = document.getElementById('search-input').value.trim();
             if (term) {
                 document.querySelectorAll('.genre-item').forEach(item => item.classList.remove('active'));
-                fetchMoviesList(term, `Resultados para: "${term}"`);
+                // TMDB usa a funcionalidade "search" para procurar por nomes
+                fetchMoviesList(`/search/movie?query=${encodeURIComponent(term)}`, `Resultados para: "${term}"`);
             }
         }
 
@@ -593,7 +718,8 @@
             if (e.key === 'Enter') { searchMovies(); }
         });
 
-        fetchMoviesList('Action', 'Filmes de Ação');
+        // Arranque Inicial (Busca os Filmes de Ação, ID 28)
+        fetchMoviesList(`/discover/movie?with_genres=28`, 'Filmes de Ação');
 
     </script>
 </body>
