@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamFlix - Tradutor Automático</title>
+    <style>
+        /* Variáveis de Tema */
+        :root {
+            --bg-color: #141414;
+            --text-color: #ffffff;
+            --nav-bg: rgba(20, 20, 20, 0.9);
+            --card-bg: #2f2f2f;
+            --accent-color: #e50914;
+            --modal-bg: rgba(0, 0, 0, 0.85);
+            --sidebar-bg: #1e1e1e;
+        }
+
+        body.light-theme {
+            --bg-color: #f4f4f4;
+            --text-color: #333333;
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --card-bg: #ffffff;
+            --accent-color: #e50914;
+            --modal-bg: rgba(255, 255, 255, 0.9);
+            --sidebar-bg: #eaeaea;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            /* Evita que o banner padrão do Google quebre o topo do site */
+            top: 0 !important; 
+        }
+
+        /* Oculta o banner superior feio do Google Tradutor */
+        .skiptranslate iframe {
+            display: none !important;
+        }
+
+        /* Navbar */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--nav-bg);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap; /* Ajuda telas pequenas */
+        }
+
+        input[type="text"] {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            outline: none;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .theme-btn {
+            background-color: #555;
+        }
+
+        /* Estilização básica do botão do Google */
+        #google_translate_element select {
+            padding: 7px 10px;
+            border-radius: 20px;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Hero Section com Vídeo */
+        .hero {
+            position: relative;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 20px;
+            margin-top: 75px; 
+            overflow: hidden;
+        }
+
+        .hero-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -2;
+            transform: translate(-50%, -50%);
+            object-fit: cover; 
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, var(--bg-color) 100%);
+            z-index: -1;
+        }
+
+        .hero-content {
+            z-index: 1; 
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.9);
+            color: white;
+        }
+
+        /* Estrutura de Layout */
+        .layout-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Menu Lateral */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            padding: 30px 20px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar h3 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+        }
+
+        .genre-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .genre-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .genre-item:hover, .genre-item.active {
+            background-color: var(--accent-color);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        /* Conteúdo Principal */
+        main {
+            flex-grow: 1;
+            padding: 30px 40px;
+        }
+
+        main h2 {
+            margin-bottom: 25px;
+            font-size: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .loading-text {
+            font-size: 14px;
+            color: var(--accent-color);
+            display: none;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .movie-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        .movie-card img {
+            width: 100%;
+            height: 270px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .movie-info {
+            padding: 12px;
+        }
+
+        .movie-info h3 {
+            font-size: 15px;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .movie-info p {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Modais */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-bg);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 650px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .login-form input {
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .modal-movie-details {
+            display: flex;
+            gap: 20px;
+        }
+
+        .modal-movie-details img {
+            width: 220px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .movie-detailed-text {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .layout-container { flex-direction: column; }
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .genre-list {
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            .genre-item { white-space: nowrap; }
+            header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            .hero { margin-top: 130px; }
+        }
+
+        @media (max-width: 600px) {
+            .modal-movie-details {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .modal-movie-details img { width: 150px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" onclick="window.location.reload()">StreamFlix</div>
+        <div class="nav-controls">
+            <div id="google_translate_element"></div>
+            
+            <input type="text" id="search-input" placeholder="Buscar filmes ou séries...">
+            <button onclick="searchMovies()">Buscar</button>
+            <button class="theme-btn" onclick="toggleTheme()">🌓 Tema</button>
+            <button onclick="openModal('loginModal')">Entrar</button>
+        </div>
+    </header>
+
+    <div class="hero">
+    <div class="hero-overlay"></div>
+    
+    <video autoplay loop muted playsinline class="hero-video">
+        <source src="Pippit_20260629_ActionTrailer.mp4" type="video/mp4">
+        Seu navegador não suporta vídeos de fundo.
+    </video>
+
+    <div class="hero-content">
+        <h1><span class="notranslate">Filmes, séries e muito mais.</span><br>Sem limites.</h1>
+    </div>
+</div>
+
+    <div class="layout-container">
+        <aside class="sidebar">
+            <h3>Gêneros</h3>
+            <ul class="genre-list">
+                <li class="genre-item active" onclick="selectGenre('Action', this)">Ação</li>
+                <li class="genre-item" onclick="selectGenre('Comedy', this)">Comédia</li>
+                <li class="genre-item" onclick="selectGenre('Drama', this)">Drama</li>
+                <li class="genre-item" onclick="selectGenre('Horror', this)">Terror</li>
+                <li class="genre-item" onclick="selectGenre('Romance', this)">Romance</li>
+                <li class="genre-item" onclick="selectGenre('Sci-Fi', this)">Ficção Científica</li>
+                <li class="genre-item" onclick="selectGenre('Documentary', this)">Documentários</li>
+            </ul>
+        </aside>
+
+        <main>
+            <h2>
+                <span id="section-title">Filmes de Ação</span>
+                <span id="loading-indicator" class="loading-text">Carregando catálogo...</span>
+            </h2>
+            <div class="movies-grid" id="movies-container">
+                </div>
+        </main>
+    </div>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('loginModal')">&times;</span>
+            <h2>Bem-vindo de volta</h2>
+            <form class="login-form" onsubmit="event.preventDefault(); alert('Login efetuado com sucesso!'); closeModal('loginModal');">
+                <input type="email" placeholder="E-mail" required>
+                <input type="password" placeholder="Senha" required>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="movieModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('movieModal')">&times;</span>
+            <div class="modal-movie-details">
+                <img id="modal-img" src="" alt="Capa">
+                <div class="movie-detailed-text">
+                    <h2 id="modal-title">Título do Filme</h2>
+                    <p style="color: var(--accent-color); font-weight: bold;">
+                        Ano: <span id="modal-year" style="color: var(--text-color); margin-right: 15px;"></span>
+                        Nota IMDb: ⭐️ <span id="modal-rating" style="color: var(--text-color);"></span>
+                    </p>
+                    <p><strong>Gênero:</strong> <span id="modal-genre"></span></p>
+                    <p id="modal-desc" style="line-height: 1.6; margin-top: 10px;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en', // O idioma base que vem da API é inglês
+                includedLanguages: 'pt', // Limitei para mostrar apenas Português para ficar mais limpo
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script>
+        // --- CONFIGURAÇÃO DA CHAVE OMDb ---
+        // Cole sua chave aqui novamente:
+        const API_KEY = 'fa44969c'; 
+        const BASE_URL = 'https://www.omdbapi.com/';
+
+        const moviesContainer = document.getElementById('movies-container');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        function toggleTheme() { document.body.classList.toggle('light-theme'); }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        }
+
+        async function fetchMoviesList(searchTerm, titleLabel) {
+            if (API_KEY === 'SUA_API_KEY_AQUI' || API_KEY.length < 5) {
+                moviesContainer.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: red; font-weight: bold;">Por favor, insira sua chave OMDb API válida no código JavaScript.</p>';
+                return;
+            }
+
+            loadingIndicator.style.display = 'block';
+            moviesContainer.innerHTML = ''; 
+            
+            let allMovies = [];
+            
+            try {
+                const pagesToFetch = [1, 2, 3];
+                const fetchPromises = pagesToFetch.map(page => 
+                    fetch(`${BASE_URL}?apikey=${API_KEY}&s=${encodeURIComponent(searchTerm)}&page=${page}`)
+                    .then(res => res.json())
+                );
+
+                const results = await Promise.all(fetchPromises);
+                
+                results.forEach(data => {
+                    if (data.Response === "True") {
+                        allMovies = allMovies.concat(data.Search);
+                    }
+                });
+
+                loadingIndicator.style.display = 'none';
+
+                if (allMovies.length > 0) {
+                    document.getElementById('section-title').innerText = titleLabel;
+                    const uniqueMovies = Array.from(new Set(allMovies.map(m => m.imdbID)))
+                        .map(id => allMovies.find(m => m.imdbID === id));
+                    renderGrid(uniqueMovies);
+                } else {
+                    moviesContainer.innerHTML = `<p style="grid-column: 1/-1; text-align:center;">Nenhum filme encontrado para "${searchTerm}".</p>`;
+                }
+            } catch (error) {
+                console.error("Erro na requisição:", error);
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        function renderGrid(movies) {
+            moviesContainer.innerHTML = '';
+            movies.forEach(movie => {
+                if (movie.Poster === "N/A") return;
+
+                const card = document.createElement('div');
+                card.classList.add('movie-card');
+
+                card.innerHTML = `
+                    <img src="${movie.Poster}" alt="${movie.Title}">
+                    <div class="movie-info">
+                        <h3>${movie.Title}</h3>
+                        <p>Ano: ${movie.Year} (${movie.Type})</p>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => fetchMovieDetails(movie.imdbID));
+                moviesContainer.appendChild(card);
+            });
+        }
+
+        async function fetchMovieDetails(imdbID) {
+            try {
+                const res = await fetch(`${BASE_URL}?apikey=${API_KEY}&i=${imdbID}&plot=full`);
+                const details = await res.json();
+
+                if (details.Response === "True") {
+                    document.getElementById('modal-title').innerText = details.Title;
+                    document.getElementById('modal-img').src = details.Poster !== "N/A" ? details.Poster : '';
+                    document.getElementById('modal-year').innerText = details.Year;
+                    document.getElementById('modal-rating').innerText = details.imdbRating !== "N/A" ? details.imdbRating : 'Sem nota';
+                    document.getElementById('modal-genre').innerText = details.Genre;
+                    document.getElementById('modal-desc').innerText = details.Plot !== "N/A" ? details.Plot : 'Sinopse não disponível.';
+                    openModal('movieModal');
+                }
+            } catch (error) {
+                console.error("Erro ao puxar detalhes:", error);
+            }
+        }
+
+        function selectGenre(genreKeyword, element) {
+            document.querySelectorAll('.genre-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+            
+            const PT_LABELS = {
+                'Action': 'Filmes de Ação',
+                'Comedy': 'Filmes de Comédia',
+                'Drama': 'Filmes de Drama',
+                'Horror': 'Filmes de Terror/Horror',
+                'Romance': 'Filmes de Romance',
+                'Sci-Fi': 'Ficção Científica',
+                'Documentary': 'Documentários'
+            };
+            fetchMoviesList(genreKeyword, PT_LABELS[genreKeyword]);
+        }
+
+        function searchMovies() {
+            const term = document.getElementById('search-input').value.trim();
+            if (term) {
+                document.querySelectorAll('.genre-item').forEach(item => item.classList.remove('active'));
+                fetchMoviesList(term, `Resultados para: "${term}"`);
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') { searchMovies(); }
+        });
+
+        fetchMoviesList('Action', 'Filmes de Ação');
+
+    </script>
+</body>
+</html>
